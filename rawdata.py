@@ -19,76 +19,81 @@ def bsearch(lst, elt):
         else:
             left = pivot + 1
 
-def select(idlist, datalist, id):
-    found, index = bsearch(idlist, id)
-    if found:
-        return datalist[index]
-    else:
-        return None
+class RawData(object):
+    def __init__(self):
+        self.idlist = []
+        self.datalist = []
 
-def insert(idlist, datalist, data):
-    id = uuid.uuid4().int
-    _, index = bsearch(idlist, id)
+    def select(self, uid):
+        found, index = bsearch(self.idlist, uid)
+        if found:
+            return uid, self.datalist[index]
+        else:
+            return None
 
-    idlist.insert(index, id)
-    datalist.insert(index, data)
-    return id
-
-def update(idlist, datalist, id, data):
-    found, index = bsearch(idlist, id)
-
-    if found:
-        datalist[index] = data
-        return True
-    else:
-        return False
-
-def delete(idlist, datalist, id):
-    found, index = bsearch(idlist, id)
-
-    if found:
-        del idlist[index]
-        del datalist[index]
-        return True
-    else:
-        return False
-
-def search(idlist, datalist, pred):
-    for index in (index for (index, elt) in enumerate(datalist) if pred(elt) == True):
-        yield idlist[index]
-        
-if __name__ == '__main__':
-    idlist = []
-    datalist = []
-
-    apple = insert(idlist, datalist, "apple")
-    orange = insert(idlist, datalist, "orange")
-    banana = insert(idlist, datalist, "banana")
-    pineapple = insert(idlist, datalist, "pineapple")
-
-    print idlist
-    print datalist
-
-    print select(idlist, datalist, apple)
-    print select(idlist, datalist, banana)
-    print select(idlist, datalist, 0)
-
-    update(idlist, datalist, apple, "green apple")
-    delete(idlist, datalist, banana)
+    def insert(self, data):
+        uid = uuid.uuid4().int
+        _, index = bsearch(self.idlist, uid)
     
-    print idlist
-    print datalist
+        self.idlist.insert(index, uid)
+        self.datalist.insert(index, data)
+        return uid
 
-    for id in search(idlist, datalist, lambda data: data.find("apple") >= 0):
-        print "found: %s" % select(idlist, datalist, id)
+    def update(self, uid, data):
+        found, index = bsearch(self.idlist, uid)
+    
+        if found:
+            self.datalist[index] = data
+            return True
+        else:
+            return False
+    
+    def delete(self, uid):
+        found, index = bsearch(self.idlist, uid)
+    
+        if found:
+            del self.idlist[index]
+            del self.datalist[index]
+            return True
+        else:
+            return False
+    
+    def search(self, pred):
+        for index in (index for (index, elt) in enumerate(self.datalist) if pred(elt) == True):
+            yield self.idlist[index], self.datalist[index]
+
+    def dump(self):
+        return [(uid, self.datalist[index]) for (index, uid) in enumerate(self.idlist)]
+
+if __name__ == '__main__':
+    database = RawData()
+
+    apple = database.insert("apple")
+    orange = database.insert("orange")
+    banana = database.insert("banana")
+    pineapple = database.insert("pineapple")
+
+    print database.dump()
+
+    print database.select(apple)
+    print database.select(banana)
+    print database.select(0)
+
+    database.update(apple, "green apple")
+    database.delete(banana)
+    
+    print database.dump()
+    
+    for (uid,data) in database.search(lambda data: data.find("apple") >= 0):
+        print "found: %x %s" % (uid, data)
 
 
-    insert(idlist,datalist,{"menu":"spam","price":1000})
-    insert(idlist,datalist,{"menu":"egg","price":300})
-    insert(idlist,datalist,{"menu":"ikura","price":3000})
+    database.insert({"menu":"spam","price":1000})
+    database.insert({"menu":"egg","price":300})
+    database.insert({"menu":"ikura","price":3000})
 
-    for id in search(idlist, datalist,lambda elt: type(elt) == dict):
-        print select(idlist, datalist, id)
+    for (uid, data) in database.search(lambda elt: type(elt) == dict and elt.get("price",0) > 500):
+        print "found: %x %s" % (uid, data)
 
     print "end."
     
